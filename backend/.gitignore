@@ -1,0 +1,81 @@
+# Python virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# FastAPI / local server
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+
+# Test / coverage
+.coverage
+htmlcov/
+coverage.xml
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Audio files for future STT/TTS testing
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.ogg
+
+# Temporary files
+tmp/
+temp/
+.cache/
+
+# Docker override files
+docker-compose.override.yml
+
+# Node / frontend later
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Frontend build later
+.next/
+dist/
+build/
+
+# AI / ML local model caches
+models/
+model_cache/
+.cache/huggingface/
+.cache/torch/
