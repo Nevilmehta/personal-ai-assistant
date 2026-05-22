@@ -4,14 +4,32 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 
 from app.services.tts_service import speak_text
+from app.services.speech_service import listen_and_transcribe
 
 API_URL = "http://127.0.0.1:8000/api/v1/jarvis/ask"
-
 console = Console()
 
-def ask_jarvis(query: str):
-    response = requests.post(API_URL, json={"query": query, "mode": "auto"}, timeout=60)
+def clean_text_for_speech(text: str):
+    replacements = {
+        "**": "",
+        "*": "",
+        "#": "",
+        "`": "",
+        "-": "",
+        "[": "",
+        "]": "",
+        "(": "",
+        ")": "",
+    }
 
+    cleaned = text
+    for old, new in replacements.items():
+        cleaned = cleaned.replace(old, new)
+
+    return cleaned.strip()
+
+def ask_jarvis(query: str):
+    response = requests.post(API_URL, json={"query": query, "mode": "voice"}, timeout=90)
     response.raise_for_status()
     return response.json()
 
@@ -29,7 +47,6 @@ def display_response(data: dict):
     console.print(Panel(Markdown(summary), title="Jarvis Response"))
 
     speak_text(clean_text_for_speech(summary))
-
     sources = data.get("sources", [])
 
     if sources:
@@ -43,49 +60,40 @@ def display_response(data: dict):
             console.print(f"   Published: {published}")
             console.print(f"   URL: {url}")
 
-def clean_text_for_speech(text: str):
-    replacements = {
-        "**": "",
-        "*": "",
-        "#": "",
-        "`": "",
-        "-": "",
-        "[": "",
-        "]": "",
-        "(": "",
-        ")": "",
-    }
-
-    cleaned = text
-
-    for old, new in replacements.items():
-        cleaned = cleaned.replace(old, new)
-
-    return cleaned.strip()
-
 def main():
     console.print(
         Panel.fit(
-            "[bold green]Jarvis CLI is online.[/bold green]\n"
-            "Type your question below.\n"
+            "[bold green]Jarvis Voice CLI is online.[/bold green]\n"
+            "Press Enter, speak for 5 seconds, and Jarvis will respond.\n"
             "Type [bold red]exit[/bold red] to quit.",
-            title="Jarvis",
+            title="Jarvis Voice Mode",
         )
     )
 
     while True:
-        query = console.input("\n[bold blue]You:[/bold blue] ")
+        command = console.input("\n[bold blue]Press Enter to speak or type exit:[/bold blue] ")
 
-        if query.lower().strip() in ["exit", "quit", "q"]:
+        if command.lower().strip() in ["exit", "quit", "q"]:
             console.print("[bold red]Jarvis shutting down.[/bold red]")
             break
 
-        if not query.strip():
-            continue
-
         try:
+            console.print("[dim]Listening...[/dim]")
+            transcript = listen_and_transcribe(duration_seconds=5)
+
+            if not transcript:
+                console.print("[bold yellow]I could not hear anything clearly. Try again.[/bold yellow]")
+                continue
+
+            console.print(
+                Panel.fit(
+                    transcript,
+                    title="You said",
+                )
+            )
+
             console.print("[dim]Jarvis is thinking...[/dim]")
-            data = ask_jarvis(query)
+            data = ask_jarvis(transcript)
             display_response(data)
 
         except requests.exceptions.ConnectionError:
@@ -103,3 +111,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

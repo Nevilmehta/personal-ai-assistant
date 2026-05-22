@@ -26,3 +26,24 @@ calendar → calendar service
 open app → device control service
 old knowledge → vector DB
 
+--------------------------------------------------------
+For this first version, the audio works in a very simple way:
+
+Press Enter
+   ↓
+Record fixed 5 seconds
+   ↓
+Save temporary WAV file
+   ↓
+Whisper transcribes it
+   ↓
+Send text to Jarvis
+
+So yes, it will sometimes miss words, cut you off, or misunderstand if:
+
+you start speaking late
+you speak longer than 5 seconds
+background noise is high
+mic quality is weak
+you speak too softly
+Whisper model is too small
