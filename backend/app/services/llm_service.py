@@ -1,13 +1,9 @@
 import json
 from typing import List, Dict
-
 from google import genai
-
 from app.config import settings
 
-
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
-
 
 def summarize_news(user_query: str, articles: List[Dict]) -> str:
     if not settings.GEMINI_API_KEY:
@@ -16,7 +12,26 @@ def summarize_news(user_query: str, articles: List[Dict]) -> str:
     if not articles:
         return "I could not find recent news for this query."
 
-    article_context = json.dumps(articles, indent=2, ensure_ascii=False)
+    compact_articles = []
+
+    for article in articles:
+        compact_articles.append(
+            {
+                "title": article.get("title"),
+                "published": article.get("published"),
+                "source": article.get("source"),
+                "url": article.get("url"),
+                "snippet": article.get("summary"),
+                "content_available": article.get("content_available", False),
+                "content": article.get("content"),
+            }
+        )
+
+    article_context = json.dumps(
+        compact_articles,
+        indent=2,
+        ensure_ascii=False,
+    )
 
     prompt = f"""
 You are Jarvis, a personal AI intelligence assistant.
@@ -24,18 +39,19 @@ You are Jarvis, a personal AI intelligence assistant.
 The user asked:
 {user_query}
 
-Use only the following news article data to answer.
+You have been given recent news/article context below.
 
 Articles:
 {article_context}
 
 Instructions:
-- Give a clear summary of the most important updates.
-- Group related updates together.
-- Mention if available information is limited.
-- Do not make up facts.
-- Do not invent dates, numbers, quotes, or events.
-- Keep the tone natural, like a helpful personal assistant.
+- Use only the provided article context.
+- Prioritize articles with full content available.
+- Separate confirmed updates from weak/limited context.
+- Mention the main themes.
+- Do not invent facts, quotes, numbers, dates, or events.
+- If sources appear repetitive, merge them into one point.
+- Keep the answer clear and conversational.
 - End with a short "Main takeaway" sentence.
 """
 

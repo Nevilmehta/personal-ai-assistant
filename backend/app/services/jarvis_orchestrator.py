@@ -8,7 +8,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.services.query_planner import create_query_plan
-from app.services.news_service import search_news
+from app.services.news_service import get_intelligent_news_context
 from app.services.llm_service import summarize_news, answer_general_question
 from app.services.intent_service import detect_intent
 
@@ -33,7 +33,11 @@ def handle_user_query(user_query: str, db: Optional[Session] = None):
     )
     
     if query_plan.retrieval_type == "news_search":
-        articles = search_news(query=query_plan.search_query, max_results=5)
+        articles = get_intelligent_news_context(
+            query=query_plan.search_query,
+            max_results=8,
+            max_articles_to_fetch=5,
+        )
 
         summary = summarize_news(
             user_query=user_query, 
@@ -73,6 +77,9 @@ def handle_user_query(user_query: str, db: Optional[Session] = None):
                 "search_query": query_plan.search_query,
                 "retrieval_type": query_plan.retrieval_type,
                 "article_count": len(articles),
+                "full_content_articles": sum(
+                    1 for article in articles if article.get("content_available")
+                ),
                 "saved_to_history": db is not None
             },
         )

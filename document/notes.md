@@ -54,3 +54,6 @@ Real-time news
 LLM summarization
 Source tracking
 Persistent memory/history
+
+trafilatura:
+trafilatura is useful because it extracts clean article text from messy web pages.
