@@ -2,6 +2,10 @@ from app.schemas.jarvis_schema import (
     JarvisAskResponse,
     NewsSource
 )
+from app.db.crud import save_jarvis_query
+
+from typing import Optional
+from sqlalchemy.orm import Session
 
 from app.services.query_planner import create_query_plan
 from app.services.news_service import search_news
@@ -9,7 +13,7 @@ from app.services.llm_service import summarize_news, answer_general_question
 from app.services.intent_service import detect_intent
 
 # This is first real Jarvis backend pipeline
-def handle_user_query(user_query: str):
+def handle_user_query(user_query: str, db: Optional[Session] = None):
     """
     Main Jarvis pipeline.
 
@@ -29,7 +33,7 @@ def handle_user_query(user_query: str):
     )
     
     if query_plan.retrieval_type == "news_search":
-        articles = search_news(query_plan.search_query, max_results=5)
+        articles = search_news(query=query_plan.search_query, max_results=5)
 
         summary = summarize_news(
             user_query=user_query, 
@@ -46,6 +50,19 @@ def handle_user_query(user_query: str):
             for article in articles
         ]
 
+        if db:
+            save_jarvis_query(
+                db=db,
+                user_query=user_query,
+                intent=query_plan.intent,
+                entity=query_plan.entity,
+                time_range=query_plan.time_range,
+                search_query=query_plan.search_query,
+                retrieval_type=query_plan.retrieval_type,
+                summary=summary,
+                sources=articles
+            )
+
         return JarvisAskResponse(
             intent=query_plan.intent,
             entity=query_plan.entity,
@@ -56,10 +73,24 @@ def handle_user_query(user_query: str):
                 "search_query": query_plan.search_query,
                 "retrieval_type": query_plan.retrieval_type,
                 "article_count": len(articles),
+                "saved_to_history": db is not None
             },
         )
 
     summary = answer_general_question(user_query)
+
+    if db:
+        save_jarvis_query(
+            db=db,
+            user_query=user_query,
+            intent=query_plan.intent,
+            entity=query_plan.entity,
+            time_range=query_plan.time_range,
+            search_query=query_plan.search_query,
+            retrieval_type=query_plan.retrieval_type,
+            summary=summary,
+            sources=[]
+        )
 
     return JarvisAskResponse(
         intent=query_plan.intent,
@@ -71,5 +102,6 @@ def handle_user_query(user_query: str):
             "search_query": query_plan.search_query,
             "retrieval_type": query_plan.retrieval_type,
             "article_count": 0,
+            "saved_to_history": db is not None
         },
     )

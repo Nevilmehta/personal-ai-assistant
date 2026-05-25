@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import datetime
 from typing import List, Optional, Dict, Any
 
 class JarvisAskRequest(BaseModel):
@@ -31,3 +32,27 @@ class JarvisAskResponse(BaseModel):
     summary: str
     sources: List[NewsSource] 
     metadata: Optional[Dict[str, Any]] = None
+
+class JarvisSourceHistory(BaseModel):
+    title: str
+    url: str
+    published: Optional[str] = None
+    source: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class JarvisQueryHistory(BaseModel):
+    id: int
+    user_query: str
+    intent: str
+    entity: Optional[str] = None
+    time_range: Optional[str] = None
+    search_query: Optional[str] = None
+    retrieval_type: Optional[str] = None
+    summary: str
+    created_at: datetime
+    sources: List[JarvisSourceHistory] = []
+
+    class Config:
+        from_attributes = True

@@ -47,3 +47,10 @@ background noise is high
 mic quality is weak
 you speak too softly
 Whisper model is too small
+
+Your Jarvis becomes more serious because it has:
+Voice loop
+Real-time news
+LLM summarization
+Source tracking
+Persistent memory/history
