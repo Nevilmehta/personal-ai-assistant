@@ -56,3 +56,19 @@ class JarvisQueryHistory(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ArticleHistory(BaseModel):
+    id: int
+    title: str
+    url: str
+    published: Optional[str] = None
+    source: Optional[str] = None
+    snippet: Optional[str] = None
+    content_available: bool
+    content_hash: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+        
