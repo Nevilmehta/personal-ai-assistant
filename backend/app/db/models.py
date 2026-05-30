@@ -72,6 +72,38 @@ class Article(Base):
         cascade="all, delete-orphan"
     )
 
+    chunks = relationship(
+        "ArticleChunk",
+        back_populates="article",
+        cascade="all, delete-orphan"
+    )
+
+class ArticleChunk(Base):
+    __tablename__ = "article_chunks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    article_id = Column(
+        Integer,
+        ForeignKey("articles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    chunk_index = Column(Integer, nullable=False)
+    content = Column(Text, nullable=False)
+    content_hash = Column(String(128), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    article = relationship("Article", back_populates="chunks")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "article_id",
+            "chunk_index",
+            name="uq_article_chunk"
+        ),
+    )    
+
 class QueryArticle(Base):
     __tablename__ = "query_articles"
 
@@ -94,3 +126,4 @@ class QueryArticle(Base):
     __table_args__ = (
         UniqueConstraint("query_id", "article_id", name="uq_query_article"),
     )
+

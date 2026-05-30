@@ -71,4 +71,13 @@ class ArticleHistory(BaseModel):
     class Config:
         from_attributes = True
 
-        
+class ArticleChunkHistory(BaseModel):
+    id: int
+    article_id: int
+    chunk_index: int
+    content: str
+    content_hash: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

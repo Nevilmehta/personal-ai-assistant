@@ -1,11 +1,12 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.db.crud import get_jarvis_history, get_articles
+from app.db.crud import get_jarvis_history, get_articles, get_article_chunks
 from app.db.database import Base, engine, get_db
 from app.schemas.jarvis_schema import (
+    ArticleChunkHistory,
     ArticleHistory,
     JarvisAskRequest,
     JarvisAskResponse,
@@ -47,3 +48,7 @@ def read_jarvis_history(limit: int = 20, db: Session = Depends(get_db)):
 @app.get("/api/v1/articles", response_model=List[ArticleHistory])
 def read_articles(limit: int = 20, db: Session = Depends(get_db)):
     return get_articles(db=db, limit=limit)
+
+@app.get("/api/v1/article_chunks", response_model=List[ArticleChunkHistory])
+def read_article_chunks(article_id: int | None = None, limit: int = 50, db: Session = Depends(get_db)):
+    return get_article_chunks(db=db, article_id=article_id, limit=limit)

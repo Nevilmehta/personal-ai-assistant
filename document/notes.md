@@ -57,3 +57,16 @@ Persistent memory/history
 
 trafilatura:
 trafilatura is useful because it extracts clean article text from messy web pages.
+
+After Jarvis fetches articles:
+Article content saved
+   ↓
+If content exists
+   ↓
+Split content into chunks
+   ↓
+Save chunks
+
+For now, because your current articles have content_available: false, chunking may not create chunks for those rows yet. That is okay. The system will be ready for when full content extraction works or when we ingest direct article text later.
+
+Training/Backpropagation: If you are training that network, backpropagation updates the model's weights based on how accurately it processes these individual chunks.

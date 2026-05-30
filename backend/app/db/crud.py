@@ -1,7 +1,8 @@
 import hashlib
 from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
-from app.db.models import Article, JarvisQuery, JarvisSource, QueryArticle
+from app.db.models import Article, ArticleChunk, JarvisQuery, JarvisSource, QueryArticle
+from app.services.chunking_service import chunk_text, generate_text_hash
 
 def save_jarvis_query(
     db: Session,
@@ -41,6 +42,8 @@ def save_jarvis_query(
         query_article_link = QueryArticle(query_id = query_record.id, article_id = article.id)
 
         db.add(query_article_link)
+
+        save_article_chunks(db=db, article=article)
 
     db.commit()
     db.refresh(query_record)
@@ -97,3 +100,35 @@ def get_or_create_article(
 
 def get_articles(db: Session, limit: int = 20):
     return db.query(Article).order_by(Article.created_at.desc()).limit(limit).all()
+
+def save_article_chunks(db: Session, article: Article, chunk_size: int = 1000, overlap: int = 150):
+    if not article.content:
+        return 0
+
+    existing_count = db.query(ArticleChunk).filter(ArticleChunk.article_id == article.id).count()
+
+    if existing_count > 0:
+        return existing_count
+
+    chunks = chunk_text(article.content, chunk_size=chunk_size, overlap=overlap)
+    for index, chunk in enumerate(chunks):
+        chunk_record = ArticleChunk(
+            article_id=article.id,
+            chunk_index=index,
+            content=chunk,
+            content_hash=generate_text_hash(chunk)
+        )
+        db.add(chunk_record)
+
+    db.flush()
+
+    return len(chunks)
+
+def get_article_chunks(db: Session, article_id: int|None=None, limit: int = 20):
+    query = db.query(ArticleChunk)
+    if article_id is not None:
+        query = query.filter(ArticleChunk.article_id == article_id)
+
+    return (
+        query.order_by(ArticleChunk.created_at.desc()).limit(limit).all()
+    )
