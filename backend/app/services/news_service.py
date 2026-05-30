@@ -25,6 +25,7 @@ def search_news(query: str, max_results: int = 8):
             "summary": entry.get("summary", ""),
             "content": None,
             "content_available": False,
+            "extraction_status": "not_attempted"
         }
 
         articles.append(article)
@@ -39,11 +40,17 @@ def enrich_articles_with_content(
 
     for index, article in enumerate(articles):
         if index < max_articles_to_fetch and article.get("url"):
-            article_text = extract_article_text(article["url"])
+            article_text, final_url = extract_article_text(article["url"])
+
+            if final_url and final_url != article["url"]:
+                article["url"] = final_url
 
             if article_text:
                 article["content"] = trim_article_text(article_text)
                 article["content_available"] = True
+                article["extraction_status"] = "success"
+            else:
+                article["extraction_status"] = "failed"
 
         enriched_articles.append(article)
 

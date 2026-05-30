@@ -70,3 +70,23 @@ Save chunks
 For now, because your current articles have content_available: false, chunking may not create chunks for those rows yet. That is okay. The system will be ready for when full content extraction works or when we ingest direct article text later.
 
 Training/Backpropagation: If you are training that network, backpropagation updates the model's weights based on how accurately it processes these individual chunks.
+
+Trafilatura is meant to extract main text from actual web pages, and feedparser gives us RSS entry fields like summary and link, but Google News RSS links are often redirect/wrapper links rather than clean publisher article URLs. Feedparser’s docs also confirm entry.summary comes from RSS description/summary fields, which explains why we only reliably get snippets from RSS right now.
+
+trafilatura = good general extractor
+newspaper3k = good for news articles
+BeautifulSoup = fallback text cleanup
+
+For a serious Jarvis news intelligence pipeline, Google News RSS should be used mainly for discovery, not as the only source.
+
+Later we should add direct feeds from sources like:
+TechCrunch RSS
+The Verge RSS
+VentureBeat RSS
+MIT Tech Review RSS
+Google AI Blog
+OpenAI Blog
+Anthropic News
+NVIDIA Blog
+Microsoft AI Blog
+
