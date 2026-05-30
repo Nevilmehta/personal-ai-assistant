@@ -90,3 +90,14 @@ Anthropic News
 NVIDIA Blog
 Microsoft AI Blog
 
+----------------------------------------
+RSS adapters
+   ├── Google News adapter
+   ├── direct publisher RSS adapter
+   └── future API adapter
+          ↓
+normalized article records
+          ↓
+content extraction
+          ↓
+article storage

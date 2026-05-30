@@ -64,8 +64,17 @@ class Article(Base):
     content_available = Column(Boolean, default=False)
 
     content_hash = Column(String(255), nullable=True, index=True)
+    discovery_url = Column(Text, nullable=True)
+    canonical_url = Column(Text, nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    extraction_status = Column(
+        String(50),
+        nullable=False,
+        default="pending"
+    )
+    extraction_error = Column(Text, nullable=True)
+    
     query_links = relationship(
         "QueryArticle",
         back_populates="article",

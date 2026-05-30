@@ -64,16 +64,26 @@ def fetch_url_html(url: str, timeout: int = 15) -> Optional[str]:
             allow_redirects=True,
         )
 
+        print("\n[Article Fetch Debug]")
+        print(f"Original URL: {url}")
+        print(f"Final URL: {response.url}")
+        print(f"Status Code: {response.status_code}")
+        print(f"Content Type: {response.headers.get('content-type')}")
+        print(f"HTML Length: {len(response.text)}")
+
         response.raise_for_status()
 
-        if "text/html" not in response.headers.get("content-type", ""):
+        content_type = response.headers.get("content-type", "")
+
+        if "text/html" not in content_type:
+            print("Extraction skipped: Content type is not HTML.")
             return None
 
         return response.text
 
-    except Exception:
+    except Exception as error:
+        print(f"Article fetch failed: {error}")
         return None
-
 
 def extract_with_trafilatura(html: str) -> Optional[str]:
     try:
