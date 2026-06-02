@@ -3,7 +3,7 @@ from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.db.crud import get_jarvis_history, get_articles, get_article_chunks
+from app.db.crud import get_jarvis_history, get_articles, get_article_chunks, backfill_article_chunks
 from app.db.database import Base, engine, get_db
 from app.schemas.jarvis_schema import (
     ArticleChunkHistory,
@@ -13,6 +13,7 @@ from app.schemas.jarvis_schema import (
     JarvisQueryHistory
 )
 from app.services.jarvis_orchestrator import handle_user_query
+from app.services.vector_store_service import index_all_article_chunks, search_similar_chunks
 
 Base.metadata.create_all(bind=engine)
 
@@ -52,3 +53,18 @@ def read_articles(limit: int = 20, db: Session = Depends(get_db)):
 @app.get("/api/v1/article_chunks", response_model=List[ArticleChunkHistory])
 def read_article_chunks(article_id: int | None = None, limit: int = 50, db: Session = Depends(get_db)):
     return get_article_chunks(db=db, article_id=article_id, limit=limit)
+
+@app.post("/api/v1/article-chunks/backfill")
+def backfill_chunks(db: Session = Depends(get_db)):
+    return backfill_article_chunks(db=db)
+
+@app.post("/api/v1/vector/index")
+def index_vectors(db: Session = Depends(get_db)):
+    return index_all_article_chunks(db=db)
+
+@app.get("/api/v1/vector/search")
+def vector_search(query: str,limit: int = 5):
+    return {
+        "query": query,
+        "results": search_similar_chunks(query=query, limit=limit)
+    }

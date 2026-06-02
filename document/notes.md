@@ -101,3 +101,98 @@ normalized article records
 content extraction
           ↓
 article storage
+
+-----------------------------------------
+Embedding + Qdrant Vector Search:
+
+Full article content when available
+        ↓
+Otherwise cleaned RSS snippet
+        ↓
+Otherwise title
+        ↓
+Article chunks
+        ↓
+Embedding model
+        ↓
+Qdrant vector database
+        ↓
+Semantic search API
+
+We will use Qdrant because its local setup is straightforward with Docker, and its Python client supports collections, vectors with payloads, upserts, and similarity queries. Qdrant’s official quickstart exposes REST on port 6333, gRPC on 6334, and a local dashboard.
+
+Uploaded Architecture:
+PostgreSQL
+├── articles
+├── article_chunks
+└── query history
+
+Qdrant
+└── jarvis_article_chunks
+    ├── vector
+    └── payload
+        ├── chunk_id
+        ├── article_id
+        ├── title
+        ├── source
+        ├── published
+        ├── content_quality
+        └── text
+
+PostgreSQL remains your source of truth.
+Qdrant stores searchable vector representations.
+
+This follows Qdrant’s standard flow:
+create collection
+↓
+upsert PointStruct vectors with payload
+↓
+query_points for similarity search
+---------------------------------------------
+
+QDrant works:
+For each article chunk:
+article chunk
+↓
+embedding model converts text into vector
+↓
+Qdrant stores vector + metadata
+
+When the user asks:
+"What AI startups recently raised funding?"
+
+we do:
+user query
+↓
+convert query into vector
+↓
+Qdrant compares query vector with stored chunk vectors
+↓
+returns most semantically similar chunks
+
+Qdrant supports similarity search and hybrid retrieval using dense and sparse vectors, and it exposes HTTP and gRPC APIs with official client libraries for multiple languages.
+
+Unlike traditional REST APIs that pass data as text (like JSON or XML), a gRPC API allows a client application to directly call a function or method on a remote server application as if it were a local function on its own machine.
+
+Think of it like SQL databases:
+PostgreSQL
+MySQL
+MongoDB
+DynamoDB
+
+There is not only one database.
+Similarly, for vector search:
+Qdrant
+Pinecone
+Weaviate
+Milvus
+pgvector
+Chroma
+FAISS
+
+Why not store everything only in PostgreSQL?
+Because Qdrant is optimized for:
+Find the text chunks whose meaning is closest to this query
+
+PostgreSQL = organized storage room
+Qdrant = intelligent search engine

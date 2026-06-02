@@ -74,7 +74,7 @@ class Article(Base):
         default="pending"
     )
     extraction_error = Column(Text, nullable=True)
-    
+
     query_links = relationship(
         "QueryArticle",
         back_populates="article",
@@ -101,6 +101,13 @@ class ArticleChunk(Base):
     chunk_index = Column(Integer, nullable=False)
     content = Column(Text, nullable=False)
     content_hash = Column(String(128), nullable=True, index=True)
+
+    content_quality = Column(
+        String(50),
+        nullable=False,
+        default="title_fallback",
+    )
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     article = relationship("Article", back_populates="chunks")
@@ -109,7 +116,7 @@ class ArticleChunk(Base):
         UniqueConstraint(
             "article_id",
             "chunk_index",
-            name="uq_article_chunk"
+            name="uq_article_chunk_index"
         ),
     )    
 

@@ -4,6 +4,22 @@ from sqlalchemy.orm import Session
 from app.db.models import Article, ArticleChunk, JarvisQuery, JarvisSource, QueryArticle
 from app.services.chunking_service import chunk_text, generate_text_hash
 
+QUALITY_RANK = {
+    "title_fallback": 1,
+    "snippet_fallback": 2,
+    "full_content": 3,
+}
+
+
+def select_article_text(article: Article) -> tuple[str, str]:
+    if article.content:
+        return article.content, "full_content"
+
+    if article.snippet:
+        return article.snippet, "snippet_fallback"
+
+    return article.title, "title_fallback"
+
 def save_jarvis_query(
     db: Session,
     user_query: str,
@@ -101,28 +117,76 @@ def get_or_create_article(
 def get_articles(db: Session, limit: int = 20):
     return db.query(Article).order_by(Article.created_at.desc()).limit(limit).all()
 
-def save_article_chunks(db: Session, article: Article, chunk_size: int = 1000, overlap: int = 150):
-    if not article.content:
+def save_article_chunks(
+    db: Session,
+    article: Article,
+    chunk_size: int = 700,
+    overlap: int = 100,
+):
+    text_to_chunk, content_quality = select_article_text(article)
+
+    if not text_to_chunk:
         return 0
 
-    existing_count = db.query(ArticleChunk).filter(ArticleChunk.article_id == article.id).count()
+    existing_chunks = (
+        db.query(ArticleChunk)
+        .filter(ArticleChunk.article_id == article.id)
+        .all()
+    )
 
-    if existing_count > 0:
-        return existing_count
+    if existing_chunks:
+        existing_quality = existing_chunks[0].content_quality
 
-    chunks = chunk_text(article.content, chunk_size=chunk_size, overlap=overlap)
+        if QUALITY_RANK[existing_quality] >= QUALITY_RANK[content_quality]:
+            return len(existing_chunks)
+
+        for chunk in existing_chunks:
+            db.delete(chunk)
+
+        db.flush()
+
+    chunks = chunk_text(
+        text=text_to_chunk,
+        chunk_size=chunk_size,
+        overlap=overlap,
+    )
+
     for index, chunk in enumerate(chunks):
-        chunk_record = ArticleChunk(
-            article_id=article.id,
-            chunk_index=index,
-            content=chunk,
-            content_hash=generate_text_hash(chunk)
+        db.add(
+            ArticleChunk(
+                article_id=article.id,
+                chunk_index=index,
+                content=chunk,
+                content_hash=generate_text_hash(chunk),
+                content_quality=content_quality,
+            )
         )
-        db.add(chunk_record)
 
     db.flush()
 
     return len(chunks)
+
+def backfill_article_chunks(db: Session):
+    articles = db.query(Article).all()
+
+    processed_articles = 0
+    total_chunks = 0
+
+    for article in articles:
+        chunk_count = save_article_chunks(
+            db=db,
+            article=article
+        )
+
+        processed_articles += 1
+        total_chunks += chunk_count
+
+    db.commit()
+
+    return {
+        "processed_articles": processed_articles,
+        "total_chunks": total_chunks
+    }
 
 def get_article_chunks(db: Session, article_id: int|None=None, limit: int = 20):
     query = db.query(ArticleChunk)

@@ -11,4 +11,17 @@ class Settings:
         "postgresql://postgres:postgres@localhost:5432/jarvis_db",
     )
 
+    QDRANT_URL: str = os.getenv(
+        "QDRANT_URL",
+        "http://localhost:6333",
+    )
+    QDRANT_COLLECTION: str = os.getenv(
+        "QDRANT_COLLECTION",
+        "jarvis_article_chunks"
+    )
+    EMBEDDING_MODEL: str = os.getenv(
+        "EMBEDDING_MODEL",
+        "sentence-transformers/all-MiniLM-L6-v2",
+    )
+
 settings = Settings()
