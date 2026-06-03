@@ -196,3 +196,23 @@ Find the text chunks whose meaning is closest to this query
 
 PostgreSQL = organized storage room
 Qdrant = intelligent search engine
+
+We remove repetitive articles because one article can contain multiple chunks. Qdrant also provides a grouping API specifically for situations where a large document is split into multiple chunks and you want results grouped by document ID. For this first version, application-side deduplication is easier to understand and debug.
+
+Your existing database endpoints can continue using FastAPI’s Depends(get_db) pattern. FastAPI’s dependency-injection system calls the dependency and injects its result into the route function, which is why your SQLAlchemy session setup works cleanly in the existing endpoints.
+
+--------------------------------------------------
+
+stored knowledge
+   ↓
+chunking
+   ↓
+embeddings
+   ↓
+Qdrant vector search
+   ↓
+context retrieval
+   ↓
+Gemini grounded answer
+   ↓
+source list

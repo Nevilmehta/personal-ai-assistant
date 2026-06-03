@@ -5,6 +5,70 @@ from app.config import settings
 
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
+def answer_with_rag_context(user_query: str, retrieved_chunks: List[Dict]):
+    if not settings.GEMINI_API_KEY:
+        return (
+            "Gemini API key is missing. "
+            "Please add GEMINI_API_KEY to your .env file."
+        )
+
+    if not retrieved_chunks:
+        return (
+            "I could not find enough relevant information "
+            "in my stored knowledge base to answer that."
+        )
+
+    context_items = []
+    for index, result in enumerate(retrieved_chunks, start=1):
+        payload = result.get("payload", {})
+
+        context_items.append(
+            {
+                "reference": f"Source {index}",
+                "title": payload.get("title"),
+                "publisher": payload.get("source"),
+                "published": payload.get("published"),
+                "url": payload.get("url"),
+                "content_quality": payload.get("content_quality", "unknown"),
+                "text": payload.get("text", ""),
+            }
+        )
+
+    context_json = json.dumps(
+        context_items,
+        indent=2,
+        ensure_ascii=False,
+    )
+
+    prompt = f"""
+You are Jarvis, a personal AI intelligence assistant.
+
+Answer the user's question using only the retrieved knowledge-base context.
+
+User question:
+{user_query}
+
+Retrieved context:
+{context_json}
+
+Instructions:
+- Use only the supplied context.
+- Do not invent facts, events, quotes, numbers, or dates.
+- If context is insufficient, say so clearly.
+- If sources repeat the same event, combine them.
+- Mention uncertainty when the context is limited.
+- Cite supporting context inline using labels such as [Source 1].
+- Keep the answer clear and conversational.
+- End with a short "Main takeaway" sentence.
+"""
+
+    response = client.models.generate_content(
+        model = settings.GEMINI_MODEL,
+        contents = prompt
+    )
+
+    return response.text or "I could not generate a response."
+
 def summarize_news(user_query: str, articles: List[Dict]) -> str:
     if not settings.GEMINI_API_KEY:
         return "Gemini API key is missing. Please add GEMINI_API_KEY in your .env file."
@@ -61,7 +125,6 @@ Instructions:
     )
 
     return response.text or "I could not generate a summary."
-
 
 def answer_general_question(user_query: str) -> str:
     if not settings.GEMINI_API_KEY:

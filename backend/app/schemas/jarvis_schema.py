@@ -1,6 +1,27 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import List, Optional, Dict, Any
+
+class RAGAskRequest(BaseModel):
+    query: str
+    top_k: int = Field(default=5, ge=1, le=20)
+    min_score: float = Field(default=0.20, ge=0.0, le=1.0)
+
+class RAGSource(BaseModel):
+    article_id: int
+    chunk_id: int 
+    title: str
+    url: Optional[str] = None
+    source: Optional[str] = None
+    published: Optional[str] = None
+    score: float
+    content_quality: str
+
+class RAGAskResponse(BaseModel):
+    query: str
+    answer: str
+    sources: List[RAGSource]
+    metadata: Dict[str, Any] 
 
 class JarvisAskRequest(BaseModel):
     query: str

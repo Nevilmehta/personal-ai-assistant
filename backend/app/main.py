@@ -10,10 +10,13 @@ from app.schemas.jarvis_schema import (
     ArticleHistory,
     JarvisAskRequest,
     JarvisAskResponse,
-    JarvisQueryHistory
+    JarvisQueryHistory,
+    RAGAskRequest,
+    RAGAskResponse
 )
 from app.services.jarvis_orchestrator import handle_user_query
 from app.services.vector_store_service import index_all_article_chunks, search_similar_chunks
+from app.services.rag_service import answer_from_knowledge_base
 
 Base.metadata.create_all(bind=engine)
 
@@ -68,3 +71,14 @@ def vector_search(query: str,limit: int = 5):
         "query": query,
         "results": search_similar_chunks(query=query, limit=limit)
     }
+
+@app.post("/api/v1/rag/ask", response_model=RAGAskResponse)
+def ask_rag(request: RAGAskRequest):
+    if not request.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+
+    return answer_from_knowledge_base(
+        query=request.query,
+        top_k=5,
+        min_score=request.min_score,
+    )

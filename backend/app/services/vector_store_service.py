@@ -77,7 +77,7 @@ def index_all_article_chunks(db: Session):
         "indexed_chunks": len(points)
     }
 
-def search_similar_chunks(query: str, limit: int = 5):
+def search_similar_chunks(query: str, limit: int = 10, min_score: float = 0.0):
     ensure_collection_exists()
 
     query_vector = embed_text(query)
@@ -89,10 +89,15 @@ def search_similar_chunks(query: str, limit: int = 5):
         with_payload=True
     ).points
 
-    return [
-        {
+    matches = []
+
+    for result in results:
+        if result.score < min_score:
+            continue
+
+        matches.append({
             "score": result.score,
             "payload": result.payload
-        }
-        for result in results
-    ]
+        })
+
+    return matches
