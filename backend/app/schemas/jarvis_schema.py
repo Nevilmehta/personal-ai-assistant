@@ -37,8 +37,12 @@ class QueryPlan(BaseModel):
     intent: str
     entity: Optional[str] = None
     time_range: Optional[str] = None
+
     search_query: str
     retrieval_type: str
+
+    use_live_news: bool = False
+    use_knowledge_base: bool = False
 
 class NewsSource(BaseModel):
     title: str
@@ -102,3 +106,21 @@ class ArticleChunkHistory(BaseModel):
 
     class Config:
         from_attributes = True
+
+class UnifiedJarvisSource(BaseModel):
+    source_type: str
+    title: str
+    url: Optional[str] = None
+    published: Optional[str] = None
+    source: Optional[float] = None
+    content_quality: Optional[str] = None
+
+class UnifiedJarvisResponse(BaseModel):
+    query: str
+    intent: str
+    retrieval_type: str
+    entity: Optional[str] = None
+    time_range: Optional[str] = None
+    answer: str
+    sources: List[UnifiedJarvisSource]
+    metadata: Dict[str, Any] = None

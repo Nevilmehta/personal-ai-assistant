@@ -150,3 +150,82 @@ Instructions:
     )
 
     return response.text or "I could not generate an answer."
+
+def answer_with_hybrid_context(
+    user_query: str,
+    live_articles: List[Dict],
+    stored_chunks: List[Dict],
+):
+    if not settings.GEMINI_API_KEY:
+        return (
+            "Gemini API key is missing. "
+            "Please add GEMINI_API_KEY to your .env file."
+        )
+
+    live_context = []
+
+    for index, article in enumerate(live_articles, start=1):
+        live_context.append(
+            {
+                "reference": f"Live Source {index}",
+                "title": article.get("title"),
+                "published": article.get("published"),
+                "source": article.get("source"),
+                "url": article.get("url"),
+                "content": (
+                    article.get("content")
+                    or article.get("summary")
+                    or article.get("title")
+                ),
+            }
+        )
+
+    stored_context = []
+
+    for index, result in enumerate(stored_chunks, start=1):
+        payload = result.get("payload", {})
+
+        stored_context.append(
+            {
+                "reference": f"Stored Source {index}",
+                "title": payload.get("title"),
+                "published": payload.get("published"),
+                "source": payload.get("source"),
+                "url": payload.get("url"),
+                "content_quality": payload.get("content_quality"),
+                "text": payload.get("text"),
+            }
+        )
+
+    prompt = f"""
+You are Jarvis, a personal AI intelligence assistant.
+
+The user asked:
+{user_query}
+
+You have two types of information:
+
+LIVE NEWS:
+{json.dumps(live_context, indent=2, ensure_ascii=False)}
+
+STORED KNOWLEDGE:
+{json.dumps(stored_context, indent=2, ensure_ascii=False)}
+
+Instructions:
+- Use only the supplied information.
+- Clearly separate fresh updates from earlier stored context.
+- Compare current developments with earlier patterns when relevant.
+- Do not invent facts, events, numbers, dates, or quotes.
+- Mention uncertainty if the available context is limited.
+- Cite live context as [Live Source X].
+- Cite stored context as [Stored Source X].
+- Keep the answer conversational.
+- End with a short "Main takeaway" sentence.
+"""
+
+    response = client.models.generate_content(
+        model=settings.GEMINI_MODEL,
+        contents=prompt,
+    )
+
+    return response.text or "I could not generate a response."

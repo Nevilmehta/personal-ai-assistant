@@ -12,11 +12,13 @@ from app.schemas.jarvis_schema import (
     JarvisAskResponse,
     JarvisQueryHistory,
     RAGAskRequest,
-    RAGAskResponse
+    RAGAskResponse,
+    UnifiedJarvisResponse,
 )
 from app.services.jarvis_orchestrator import handle_user_query
 from app.services.vector_store_service import index_all_article_chunks, search_similar_chunks
 from app.services.rag_service import answer_from_knowledge_base
+from app.services.unified_jarvis_service import handle_unified_query
 
 Base.metadata.create_all(bind=engine)
 
@@ -43,6 +45,13 @@ def ask_jarvis(request: JarvisAskRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
     return handle_user_query(user_query=request.query, db=db)
+
+@app.post("/api/v1/jarvis/unified-ask", response_model=UnifiedJarvisResponse)
+def ask_unified_jarvis(request: JarvisAskRequest, db: Session = Depends(get_db)):
+    if not request.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+
+    return handle_unified_query(user_query=request.query, db=db)
 
 @app.get("/api/v1/jarvis/history", response_model=List[JarvisQueryHistory])
 def read_jarvis_history(limit: int = 20, db: Session = Depends(get_db)):
