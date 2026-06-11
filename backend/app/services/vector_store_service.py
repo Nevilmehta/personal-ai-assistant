@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance,
@@ -29,20 +29,39 @@ def ensure_collection_exists():
         )
     )
 
-def index_all_article_chunks(db: Session):
+def index_article_chunks(
+    db: Session,
+    article_ids: Optional[List[int]] = None,
+) -> Dict[str, int]:
+    """
+    Indexes article chunks into Qdrant.
+
+    If article_ids are supplied, only chunks belonging to those
+    articles are indexed.
+    """
+
     ensure_collection_exists()
 
-    chunks = (db.query(ArticleChunk)
+    query = (
+        db.query(ArticleChunk)
         .options(joinedload(ArticleChunk.article))
-        .all()
     )
+
+    if article_ids:
+        query = query.filter(
+            ArticleChunk.article_id.in_(article_ids)
+        )
+
+    chunks = query.all()
 
     if not chunks:
         return {
-            "indexed_chunks": 0
+            "indexed_chunks": 0,
         }
 
-    vectors = embed_texts([chunk.content for chunk in chunks])
+    vectors = embed_texts(
+        [chunk.content for chunk in chunks]
+    )
 
     points = []
 
@@ -70,12 +89,21 @@ def index_all_article_chunks(db: Session):
     client.upsert(
         collection_name=settings.QDRANT_COLLECTION,
         wait=True,
-        points=points
+        points=points,
     )
 
     return {
-        "indexed_chunks": len(points)
+        "indexed_chunks": len(points),
     }
+
+
+def index_all_article_chunks(
+    db: Session,
+) -> Dict[str, int]:
+    return index_article_chunks(
+        db=db,
+        article_ids=None,
+    )
 
 def search_similar_chunks(query: str, limit: int = 10, min_score: float = 0.0):
     ensure_collection_exists()

@@ -79,3 +79,8 @@ models/
 model_cache/
 .cache/huggingface/
 .cache/torch/
+
+# Backup files
+*.bak
+*.dat
+*.dir

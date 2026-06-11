@@ -1,5 +1,5 @@
 import hashlib
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from sqlalchemy.orm import Session
 from app.db.models import Article, ArticleChunk, JarvisQuery, JarvisSource, QueryArticle
 from app.services.chunking_service import chunk_text, generate_text_hash
@@ -196,3 +196,90 @@ def get_article_chunks(db: Session, article_id: int|None=None, limit: int = 20):
     return (
         query.order_by(ArticleChunk.created_at.desc()).limit(limit).all()
     )
+
+def save_ingested_articles(db: Session, articles: List[Dict[str, Any]]):
+    """
+    Stores articles discovered by the scheduled ingestion worker.
+
+    Existing articles are reused and upgraded when better content
+    becomes available.
+    """
+    created_articles = 0
+    reused_articles = 0
+    total_chunks = 0
+    article_ids = []
+
+    for article_data in articles:
+        url = article_data.get("url")
+
+        if not url:
+            continue
+
+        existing_article = (
+            db.query(Article)
+            .filter(Article.url == url)
+            .first()
+        )
+
+        if existing_article:
+            article = existing_article
+            reused_articles += 1
+
+            article.title = (
+                article_data.get("title")
+                or article.title
+            )
+
+            article.published = (
+                article_data.get("published")
+                or article.published
+            )
+
+            article.source = (
+                article_data.get("source")
+                or article.source
+            )
+
+            article.snippet = (
+                article_data.get("summary")
+                or article.snippet
+            )
+
+            incoming_content = article_data.get("content")
+
+            if incoming_content and (
+                not article.content
+                or len(incoming_content) > len(article.content)
+            ):
+                article.content = incoming_content
+                article.content_available = True
+                article.content_hash = generate_content_hash(
+                    incoming_content
+                )
+
+        else:
+            article = get_or_create_article(
+                db=db,
+                article_data=article_data,
+            )
+
+            created_articles += 1
+
+        db.flush()
+
+        chunk_count = save_article_chunks(
+            db=db,
+            article=article,
+        )
+
+        total_chunks += chunk_count
+        article_ids.append(article.id)
+
+    db.commit()
+
+    return {
+        "created_articles": created_articles,
+        "reused_articles": reused_articles,
+        "total_chunks": total_chunks,
+        "article_ids": list(set(article_ids)),
+    }

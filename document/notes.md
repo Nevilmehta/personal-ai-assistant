@@ -216,3 +216,52 @@ context retrieval
 Gemini grounded answer
    ↓
 source list
+
+Jarvis can choose between:
+live news search
+stored knowledge retrieval
+hybrid intelligence
+general conversation
+
+Right now jarvis stores articles only when u ask a question,
+
+Redis = task broker
+Celery worker = ingestion processor
+Celery Beat = scheduler
+
+Later, Kafka can replace or supplement parts of this system when we introduce streaming ingestion from RSS, videos, podcasts, and other event sources.
+
+Architecture after this phase:
+Celery Beat
+   ↓ every 30 minutes
+Redis Queue
+   ↓
+Celery Ingestion Worker
+   ↓
+Tracked topics
+   ├── artificial intelligence
+   ├── AI startups
+   ├── OpenAI
+   ├── Anthropic
+   └── NVIDIA AI
+         ↓
+News retrieval
+         ↓
+PostgreSQL article storage
+         ↓
+Chunk creation
+         ↓
+Embedding generation
+         ↓
+Qdrant upsert
+
+Redis database 0 will carry queued tasks.
+Redis database 1 will temporarily store task results.
+
+First ingestion
+→ snippet fallback saved
+
+Later ingestion
+→ full article extraction succeeds
+→ article content upgraded
+→ snippet chunks replaced by full-content chunks

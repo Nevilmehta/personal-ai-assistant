@@ -24,4 +24,25 @@ class Settings:
         "sentence-transformers/all-MiniLM-L6-v2",
     )
 
+    CELERY_BROKER_URL: str = os.getenv(
+    "CELERY_BROKER_URL",
+    "redis://localhost:6379/0",
+    )
+    CELERY_RESULT_BACKEND: str = os.getenv(
+        "CELERY_RESULT_BACKEND",
+        "redis://localhost:6379/1",
+    )
+    TRACKED_NEWS_TOPICS: list[str] = [
+        topic.strip()
+        for topic in os.getenv(
+            "TRACKED_NEWS_TOPICS",
+            "artificial intelligence,AI startups,OpenAI,Anthropic,NVIDIA AI",
+        ).split(",")
+        if topic.strip()
+    ]
+    INGESTION_INTERVAL_MINUTES: int = int(
+        os.getenv("INGESTION_INTERVAL_MINUTES", "30")
+    )
+    JARVIS_TIMEZONE: str = os.getenv("JARVIS_TIMEZONE", "Asia/Kolkata")
+
 settings = Settings()

@@ -2,6 +2,11 @@ from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
+from celery.result import AsyncResult
+
+from app.celery_app import celery_app
+from app.config import settings
+from app.tasks.ingestion_tasks import ingest_tracked_topics
 
 from app.db.crud import get_jarvis_history, get_articles, get_article_chunks, backfill_article_chunks
 from app.db.database import Base, engine, get_db
@@ -91,3 +96,36 @@ def ask_rag(request: RAGAskRequest):
         top_k=5,
         min_score=request.min_score,
     )
+
+@app.post("/api/v1/ingestion/run")
+def trigger_ingestion():
+    task = ingest_tracked_topics.delay()
+
+    return {
+        "message": "Background ingestion task queued.",
+        "task_id": task.id,
+    }
+
+@app.get("/api/v1/ingestion/status/{task_id}")
+def get_ingestion_status(task_id: str):
+    task_result = AsyncResult(task_id, app=celery_app)
+
+    response = {
+        "task_id": task_id,
+        "status": task_result.status,
+    }
+
+    if task_result.successful():
+        response["result"] = task_result.result
+
+    elif task_result.failed():
+        response["error"] = str(task_result.result)
+
+    return response
+
+@app.get("/api/v1/ingestion/topics")
+def get_tracked_topics():
+    return {
+        "topics": settings.TRACKED_NEWS_TOPICS,
+        "interval_minutes": settings.INGESTION_INTERVAL_MINUTES,
+    }
