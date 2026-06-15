@@ -265,3 +265,21 @@ Later ingestion
 → full article extraction succeeds
 → article content upgraded
 → snippet chunks replaced by full-content chunks
+
+Jarvis can learn without waiting for you to ask:
+scheduled ingestion
+Redis task queue
+Celery worker
+topic-based retrieval
+automatic PostgreSQL storage
+chunk generation
+Qdrant indexing
+RAG-ready knowledge
+
+--------------------------------------->
+Beat = alarm clock
+Redis = waiting area
+Worker = employee
+Task function = actual job instructions
+PostgreSQL = permanent article storage
+Qdrant = searchable vector storage

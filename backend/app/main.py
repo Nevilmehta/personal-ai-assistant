@@ -8,7 +8,17 @@ from app.celery_app import celery_app
 from app.config import settings
 from app.tasks.ingestion_tasks import ingest_tracked_topics
 
-from app.db.crud import get_jarvis_history, get_articles, get_article_chunks, backfill_article_chunks
+from app.db.crud import (
+    get_jarvis_history, 
+    get_articles, 
+    get_article_chunks, 
+    backfill_article_chunks,
+    create_tracked_topic,
+    delete_tracked_topic,
+    get_tracked_topics,
+    seed_default_topics,
+    update_tracked_topic
+)
 from app.db.database import Base, engine, get_db
 from app.schemas.jarvis_schema import (
     ArticleChunkHistory,
@@ -19,6 +29,9 @@ from app.schemas.jarvis_schema import (
     RAGAskRequest,
     RAGAskResponse,
     UnifiedJarvisResponse,
+    TrackedTopicCreate,
+    TrackedTopicResponse,
+    TrackedTopicUpdate
 )
 from app.services.jarvis_orchestrator import handle_user_query
 from app.services.vector_store_service import index_all_article_chunks, search_similar_chunks
@@ -123,9 +136,69 @@ def get_ingestion_status(task_id: str):
 
     return response
 
-@app.get("/api/v1/ingestion/topics")
-def get_tracked_topics():
+@app.get("/api/v1/ingestion/topics", response_model=List[TrackedTopicResponse])
+def get_ingestion_topics(db: Session = Depends(get_db)):
+    return get_tracked_topics(
+        db=db,
+        enabled_only=True,
+    )
+
+@app.post("/api/v1/topics", response_model=TrackedTopicResponse)
+def create_topic(request: TrackedTopicCreate, db: Session = Depends(get_db)):
+    if not request.name.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Topic name cannot be empty."
+        )
+
+    return create_tracked_topic(
+        db=db,
+        name=request.name.strip(),
+        description=request.description,
+        enabled=request.enabled,
+        ingestion_interval_minutes=request.ingestion_interval_minutes
+    )
+
+@app.get("/api/v1/topics", response_model=List[TrackedTopicResponse])
+def list_topics(enabled_only: bool = False, db: Session = Depends(get_db)):
+    return get_tracked_topics(db=db, enabled_only=enabled_only)
+
+@app.patch("/api/v1/topics/{topic_id}", response_model=TrackedTopicResponse)
+def update_topic(topic_id: int, request: TrackedTopicUpdate, db: Session = Depends(get_db)):
+    topic = update_tracked_topic(
+        db=db,
+        topic_id=topic_id,
+        update_data=request.model_dump(exclude_unset=True)
+    )
+
+    if not topic:
+        raise HTTPException(
+            status_code=404,
+            detail="Topic not found."
+        )
+
+    return topic
+
+@app.delete("/api/v1/topics/{topic_id}")
+def remove_topic(topic_id:int, db: Session=Depends(get_db)):
+    deleted = delete_tracked_topic(db=db, topic_id=topic_id)
+
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail="Topic not found."
+        )
+
     return {
-        "topics": settings.TRACKED_NEWS_TOPICS,
-        "interval_minutes": settings.INGESTION_INTERVAL_MINUTES,
+        "message": "Topic deleted successfully",
+        "topic_id": topic_id
+    }
+
+@app.post("/api/v1/topics/seed-defaults")
+def seed_topics(db: Session = Depends(get_db)):
+    created_count = seed_default_topics(db=db)
+
+    return {
+        "message": "Default topics seeded",
+        "created_count": created_count
     }

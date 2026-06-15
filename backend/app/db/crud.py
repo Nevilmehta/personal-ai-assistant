@@ -1,15 +1,16 @@
 import hashlib
 from typing import List, Dict, Optional, Any
 from sqlalchemy.orm import Session
-from app.db.models import Article, ArticleChunk, JarvisQuery, JarvisSource, QueryArticle
+from app.db.models import Article, ArticleChunk, JarvisQuery, JarvisSource, QueryArticle, TrackedTopic
 from app.services.chunking_service import chunk_text, generate_text_hash
+from datetime import datetime, timezone
+from typing import List, Dict, Optional
 
 QUALITY_RANK = {
     "title_fallback": 1,
     "snippet_fallback": 2,
     "full_content": 3,
 }
-
 
 def select_article_text(article: Article) -> tuple[str, str]:
     if article.content:
@@ -283,3 +284,135 @@ def save_ingested_articles(db: Session, articles: List[Dict[str, Any]]):
         "total_chunks": total_chunks,
         "article_ids": list(set(article_ids)),
     }
+
+def create_tracked_topic(
+    db: Session,
+    name: str,
+    description: Optional[str] = None,
+    enabled: bool = True,
+    ingestion_interval_minutes: int = 30
+):
+    existing_topic = (
+        db.query(TrackedTopic)
+        .filter(TrackedTopic.name == name)
+        .first()
+    )
+
+    if existing_topic:
+        return existing_topic
+
+    topic = TrackedTopic(
+        name=name,
+        description=description,
+        enabled=enabled,
+        ingestion_interval_minutes=ingestion_interval_minutes
+    )
+
+    db.add(topic)
+    db.commit()
+    db.refresh(topic)
+
+    return topic
+
+def get_tracked_topics(db: Session, enabled_only: bool = False):
+    query = db.query(TrackedTopic)
+    if enabled_only:
+        query = query.filter(TrackedTopic.enabled == True)
+
+    return query.order_by(TrackedTopic.created_at.desc()).all()
+
+def get_tracked_topic_by_id(db: Session, topic_id: int):
+    return (
+        db.query(TrackedTopic)
+        .filter(TrackedTopic.id == topic_id)
+        .first()
+    )
+
+def update_tracked_topic(
+    db: Session,
+    topic_id: int,
+    update_data: dict
+):
+    topic = get_tracked_topic_by_id(
+        db=db,
+        topic_id=topic_id,
+    )
+
+    if not topic:
+        return None
+
+    for field, value in update_data.items():
+        if value is not None:
+            setattr(topic, field, value)
+
+    db.commit()
+    db.refresh(topic)
+
+    return topic
+
+def delete_tracked_topic(db: Session, topic_id: int):
+    topic = get_tracked_topic_by_id(
+        db=db,
+        topic_id=topic_id,
+    )
+
+    if not topic:
+        return False
+
+    db.delete(topic)
+    db.commit()
+
+    return True
+
+def seed_default_topics(db: Session):
+    default_topics = [
+        "artificial intelligence",
+        "AI startups",
+        "OpenAI",
+        "Anthropic",
+        "NVIDIA AI",
+    ]
+
+    created_count = 0
+
+    for topic_name in default_topics:
+        existing_topic = (
+            db.query(TrackedTopic)
+            .filter(TrackedTopic.name == topic_name)
+            .first()
+        )
+
+        if existing_topic:
+            continue
+
+        topic = TrackedTopic(
+            name=topic_name,
+            enabled=True,
+            ingestion_interval_minutes=30,
+        )
+
+        db.add(topic)
+        created_count += 1
+
+    db.commit()
+
+    return created_count
+
+def mark_topic_ingested(
+    db: Session,
+    topic_id: int
+):
+    topic = get_tracked_topic_by_id(
+        db = db,
+        topic_id= topic_id
+    )
+
+    if not topic:
+        return None
+
+    topic.last_ingested_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(topic)
+
+    return topic

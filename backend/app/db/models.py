@@ -143,3 +143,16 @@ class QueryArticle(Base):
         UniqueConstraint("query_id", "article_id", name="uq_query_article"),
     )
 
+class TrackedTopic(Base):
+    __tablename__ = "tracked_topics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False, unique=True, index=True)
+    description = Column(Text, nullable=True)
+
+    enabled = Column(Boolean, default=True, nullable=False)
+
+    ingestion_interval_minutes = Column(Integer, default=30, nullable=False)
+    last_ingested_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

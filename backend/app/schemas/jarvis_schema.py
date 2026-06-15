@@ -124,3 +124,27 @@ class UnifiedJarvisResponse(BaseModel):
     answer: str
     sources: List[UnifiedJarvisSource]
     metadata: Dict[str, Any] = None
+
+class TrackedTopicCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    enabled: bool = True
+    ingestion_interval_minutes: int = 30
+
+class TrackedTopicUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    enabled: Optional[bool] = None
+    ingestion_interval_minutes: Optional[int] = None
+
+class TrackedTopicResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    enabled: bool
+    ingestion_interval_minutes: int
+    last_ingestion_at: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
