@@ -19,6 +19,20 @@ class Settings:
         "QDRANT_COLLECTION",
         "jarvis_article_chunks"
     )
+    QDRANT_GRPC_HOST: str = os.getenv(
+        "QDRANT_GRPC_HOST",
+        "127.0.0.1",
+    )
+
+    QDRANT_GRPC_PORT: int = int(
+        os.getenv("QDRANT_GRPC_PORT", "6334")
+    )
+
+    QDRANT_USE_GRPC: bool = os.getenv(
+        "QDRANT_USE_GRPC",
+        "true",
+    ).lower() == "true"
+
     EMBEDDING_MODEL: str = os.getenv(
         "EMBEDDING_MODEL",
         "sentence-transformers/all-MiniLM-L6-v2",

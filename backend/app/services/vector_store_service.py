@@ -15,7 +15,12 @@ from app.services.embedding_service import (
     embed_texts
 )
 
-client = QdrantClient(url=settings.QDRANT_URL)
+client = QdrantClient(
+    host=settings.QDRANT_GRPC_HOST,
+    grpc_port=settings.QDRANT_GRPC_PORT,
+    prefer_grpc=settings.QDRANT_USE_GRPC,
+    timeout=30,
+)
 
 def ensure_collection_exists():
     if client.collection_exists(settings.QDRANT_COLLECTION):

@@ -307,3 +307,59 @@ Latest Ingestion: Success
 Failed Runs: 0
 Full Content Articles: 12
 
+------------------------------------------
+What is gRPC?
+gRPC is a way for two programs/services to talk to each other.
+
+In your project:
+FastAPI backend
+   ↓ talks to
+Qdrant vector database
+
+Earlier they were talking through normal HTTP/REST.
+Now they are talking through gRPC.
+
+gRPC
+gRPC is more like a fast direct service-to-service call.
+Instead of sending JSON text, it sends compact binary data using something called Protocol Buffers.
+
+So instead of:
+Send big JSON request
+Parse JSON response
+
+it does:
+Send compact binary request
+Receive compact binary response
+
+That makes it faster and more efficient for backend services.
+
+Qdrant:
+REST = easier for manual debugging
+gRPC = better for app-to-database performance
+
+By switching to gRPC:
+FastAPI → Qdrant
+
+became more efficient and stable for vector search.
+This is common when a service supports both REST and gRPC.
+
+-------------------------------------------------------------------------
+Where gRPC is used in real systems-->
+
+gRPC is commonly used in:
+microservices
+vector databases
+internal backend services
+high-performance APIs
+real-time systems
+AI infrastructure
+Kubernetes-based systems
+
+Example:
+speech-service → intent-service
+intent-service → rag-service
+rag-service → vector-db
+
+In your future Jarvis architecture, gRPC could be used between internal services.
+
+I used REST for the public FastAPI endpoints because it is easy for clients and dashboards to consume. For the vector database communication with Qdrant, I switched to gRPC because vector search involves sending dense numeric embeddings, and gRPC is more efficient and stable for internal service-to-service communication.
