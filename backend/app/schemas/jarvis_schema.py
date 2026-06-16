@@ -207,3 +207,14 @@ class IngestionDashboardSummary(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ServiceHealthStatus(BaseModel):
+    service: str
+    status: str
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+
+class DetailedHealthResponse(BaseModel):
+    overall_status: str
+    services: List[ServiceHealthStatus]
+    metadata: Dict[str, Any]

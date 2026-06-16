@@ -24,7 +24,8 @@ from app.db.crud import (
     update_ingestion_run_task_id,
     get_ingestion_dashboard_summary,
     get_topic_dashboard_summary,
-    get_knowledge_base_summary
+    get_knowledge_base_summary,
+
 )
 from app.db.database import Base, engine, get_db
 from app.schemas.jarvis_schema import (
@@ -40,12 +41,14 @@ from app.schemas.jarvis_schema import (
     TrackedTopicResponse,
     TrackedTopicUpdate,
     IngestionRunResponse,
-    IngestionDashboardSummary
+    IngestionDashboardSummary,
+    DetailedHealthResponse
 )
 from app.services.jarvis_orchestrator import handle_user_query
 from app.services.vector_store_service import index_all_article_chunks, search_similar_chunks
 from app.services.rag_service import answer_from_knowledge_base
 from app.services.unified_jarvis_service import handle_unified_query
+from app.services.health_service import get_detailed_health
 
 Base.metadata.create_all(bind=engine)
 
@@ -269,3 +272,7 @@ def read_knowledge_base_dashboard(
     db: Session = Depends(get_db),
 ):
     return get_knowledge_base_summary(db=db)
+
+@app.get("/api/v1/health/detailed", response_model=DetailedHealthResponse)
+def read_detailed_health(db: Session = Depends(get_db)):
+    return get_detailed_health(db=db)
