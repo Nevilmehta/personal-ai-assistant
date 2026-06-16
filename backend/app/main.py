@@ -17,7 +17,11 @@ from app.db.crud import (
     delete_tracked_topic,
     get_tracked_topics,
     seed_default_topics,
-    update_tracked_topic
+    update_tracked_topic,
+    create_ingestion_run,
+    get_ingestion_run_by_id,
+    get_ingestion_runs,
+    update_ingestion_run_task_id
 )
 from app.db.database import Base, engine, get_db
 from app.schemas.jarvis_schema import (
@@ -31,7 +35,8 @@ from app.schemas.jarvis_schema import (
     UnifiedJarvisResponse,
     TrackedTopicCreate,
     TrackedTopicResponse,
-    TrackedTopicUpdate
+    TrackedTopicUpdate,
+    IngestionRunResponse
 )
 from app.services.jarvis_orchestrator import handle_user_query
 from app.services.vector_store_service import index_all_article_chunks, search_similar_chunks
@@ -109,15 +114,6 @@ def ask_rag(request: RAGAskRequest):
         top_k=5,
         min_score=request.min_score,
     )
-
-@app.post("/api/v1/ingestion/run")
-def trigger_ingestion():
-    task = ingest_tracked_topics.delay()
-
-    return {
-        "message": "Background ingestion task queued.",
-        "task_id": task.id,
-    }
 
 @app.get("/api/v1/ingestion/status/{task_id}")
 def get_ingestion_status(task_id: str):
@@ -202,3 +198,56 @@ def seed_topics(db: Session = Depends(get_db)):
         "message": "Default topics seeded",
         "created_count": created_count
     }
+
+@app.post("/api/v1/ingestion/run")
+def trigger_ingestion(
+    db: Session = Depends(get_db)
+):
+
+    ingestion_run = create_ingestion_run(db=db)
+    task = ingest_tracked_topics.delay(
+        run_id=ingestion_run.id
+    )
+
+    update_ingestion_run_task_id(
+        db=db,
+        run_id=ingestion_run.id,
+        task_id=task.id
+    )
+
+    return {
+        "message": "Background ingestion task queued.",
+        "task_id": task.id,
+        "ingestion_run_id": ingestion_run.id
+    }
+
+@app.get(
+    "/api/v1/ingestion/runs",
+    response_model=List[IngestionRunResponse],
+)
+def list_ingestion_runs(
+    limit: int = 20,
+    db: Session = Depends(get_db),
+):
+    return get_ingestion_runs(
+        db=db,
+        limit=limit,
+    )
+
+@app.get("/api/v1/ingestion/runs/{run_id}", response_model=IngestionRunResponse)
+def read_ingestion_run(
+    run_id: int,
+    db: Session = Depends(get_db)
+):
+    run = get_ingestion_run_by_id(
+        db=db,
+        run_id=run_id
+    )
+
+    if not run:
+        raise HTTPException(
+            status_code=404,
+            detail="Ingestion run not found."
+        )
+
+    return run 

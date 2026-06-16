@@ -156,3 +156,61 @@ class TrackedTopic(Base):
     last_ingested_at = Column(DateTime(timezone=True), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class IngestionRun(Base):
+    __tablename__ = "ingestion_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    task_id = Column(String(255), nullable=True, index=True)
+    status = Column(String(50), nullable=False, default="pending")
+
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+
+    total_topics = Column(Integer, nullable=False, default=0)
+    total_articles_retrieved = Column(Integer, nullable=False, default=0)
+    total_articles_created = Column(Integer, nullable=False, default=0)
+    total_articles_reused = Column(Integer, nullable=False, default=0)
+    total_chunks = Column(Integer, nullable=False, default=0)
+    total_indexed_chunks = Column(Integer, nullable=False, default=0)
+
+    error_message = Column(Text, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    topic_runs = relationship(
+        "IngestionTopicRun",
+        back_populates="ingestion_run",
+        cascade="all, delete-orphan",
+    )
+
+class IngestionTopicRun(Base):
+    __tablename__="ingestion_topic_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    ingestion_run_id = Column(
+        Integer,
+        ForeignKey("ingestion_runs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    topic_id= Column(Integer, nullable=True)
+    topic_name= Column(String(255), nullable=False)
+
+    retrieved_articles = Column(Integer, nullable=False, default=0)
+    created_articles = Column(Integer, nullable=False, default=0)
+    reused_articles = Column(Integer, nullable=False, default=0)
+    chunks_created = Column(Integer, nullable=False, default=0)
+
+    status = Column(String(50), nullable=False, default="success")
+    error_message = Column(Text, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    ingestion_run = relationship(
+        "IngestionRun",
+        back_populates="topic_runs",
+    )

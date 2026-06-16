@@ -148,3 +148,43 @@ class TrackedTopicResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class IngestionTopicRunResponse(BaseModel):
+    id: int
+    topic_id: Optional[int]=None
+    topic_name: str
+
+    retrieved_articles: int
+    created_articles: int
+    reused_articles: int
+    chunks_created: int
+
+    status: str
+    error_message: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class IngestionRunResponse(BaseModel):
+    id: int
+    task_id: Optional[str] = None
+    status: str
+
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+
+    total_topics: int
+    total_articles_retrieved: int
+    total_articles_created: int
+    total_articles_reused: int
+    total_chunks: int
+    total_indexed_chunks: int
+
+    error_message: Optional[str] = None
+    created_at: datetime
+
+    topic_runs: List[IngestionTopicRunResponse] = []
+
+    class Config:
+        from_attributes = True

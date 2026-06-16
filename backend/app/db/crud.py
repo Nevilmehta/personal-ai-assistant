@@ -1,7 +1,7 @@
 import hashlib
 from typing import List, Dict, Optional, Any
 from sqlalchemy.orm import Session
-from app.db.models import Article, ArticleChunk, JarvisQuery, JarvisSource, QueryArticle, TrackedTopic
+from app.db.models import Article, ArticleChunk, JarvisQuery, JarvisSource, QueryArticle, TrackedTopic, IngestionRun, IngestionTopicRun
 from app.services.chunking_service import chunk_text, generate_text_hash
 from datetime import datetime, timezone
 from typing import List, Dict, Optional
@@ -416,3 +416,147 @@ def mark_topic_ingested(
     db.refresh(topic)
 
     return topic
+
+def create_ingestion_run(
+    db: Session,
+    task_id: Optional[str] = None
+):
+    run = IngestionRun(
+        task_id=task_id,
+        status="running",
+        started_at=datetime.now(timezone.utc)
+    )
+
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+
+    return run
+
+def update_ingestion_run_task_id(
+    db: Session,
+    run_id: int,
+    task_id: str
+):
+    run = (
+        db.query(IngestionRun)
+        .filter(IngestionRun.id == run_id)
+        .first()
+    )
+
+    if not run:
+        return None
+    
+    run.task_id = task_id
+
+    db.commit()
+    db.refresh(run)
+
+    return run
+
+def add_ingestion_topic_run(
+    db: Session,
+    ingestion_run_id: int,
+    topic_id: Optional[int],
+    topic_name: str,
+    retrieved_articles: int,
+    created_articles: int,
+    reused_articles: int,
+    chunks_created: int,
+    status: str = "success",
+    error_message: Optional[str] = None
+):
+    topic_run = IngestionTopicRun(
+        ingestion_run_id=ingestion_run_id,
+        topic_id=topic_id,
+        topic_name=topic_name,
+        retrieved_articles=retrieved_articles,
+        created_articles=created_articles,
+        reused_articles=reused_articles,
+        chunks_created=chunks_created,
+        status=status,
+        error_message=error_message,
+    )
+
+    db.add(topic_run)
+    db.commit()
+    db.refresh(topic_run)
+
+    return topic_run
+
+def complete_ingestion_run(
+    db: Session,
+    run_id: int,
+    total_topics: int,
+    total_articles_retrieved: int,
+    total_articles_created: int,
+    total_articles_reused: int,
+    total_chunks: int,
+    total_indexed_chunks: int,
+) -> Optional[IngestionRun]:
+    run = (
+        db.query(IngestionRun)
+        .filter(IngestionRun.id == run_id)
+        .first()
+    )
+
+    if not run:
+        return None
+
+    run.status = "success"
+    run.finished_at = datetime.now(timezone.utc)
+    run.total_topics = total_topics
+    run.total_articles_retrieved = total_articles_retrieved
+    run.total_articles_created = total_articles_created
+    run.total_articles_reused = total_articles_reused
+    run.total_chunks = total_chunks
+    run.total_indexed_chunks = total_indexed_chunks
+
+    db.commit()
+    db.refresh(run)
+
+    return run
+
+def fail_ingestion_run(
+    db: Session,
+    run_id: int,
+    error_message: str
+):
+    run = (
+        db.query(IngestionRun)
+        .filter(IngestionRun.id == run_id)
+        .first()
+    )
+
+    if not run:
+        return None
+
+    run.status = "failed"
+    run.finished_at = datetime.now(timezone.utc)
+    run.error_message = error_message
+
+    db.commit()
+    db.refresh(run)
+    
+    return run
+
+def get_ingestion_runs(
+    db: Session,
+    limit: int = 20
+):
+    return (
+        db.query(IngestionRun)
+        .order_by(IngestionRun.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+def get_ingestion_run_by_id(
+    db: Session,
+    run_id: int
+):
+    return (
+        db.query(IngestionRun)
+        .filter(IngestionRun.id == run_id)
+        .first()
+    )
