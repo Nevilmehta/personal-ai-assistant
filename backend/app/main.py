@@ -21,7 +21,10 @@ from app.db.crud import (
     create_ingestion_run,
     get_ingestion_run_by_id,
     get_ingestion_runs,
-    update_ingestion_run_task_id
+    update_ingestion_run_task_id,
+    get_ingestion_dashboard_summary,
+    get_topic_dashboard_summary,
+    get_knowledge_base_summary
 )
 from app.db.database import Base, engine, get_db
 from app.schemas.jarvis_schema import (
@@ -36,7 +39,8 @@ from app.schemas.jarvis_schema import (
     TrackedTopicCreate,
     TrackedTopicResponse,
     TrackedTopicUpdate,
-    IngestionRunResponse
+    IngestionRunResponse,
+    IngestionDashboardSummary
 )
 from app.services.jarvis_orchestrator import handle_user_query
 from app.services.vector_store_service import index_all_article_chunks, search_similar_chunks
@@ -251,3 +255,17 @@ def read_ingestion_run(
         )
 
     return run 
+
+@app.get("/api/v1/dashboard/ingestion")
+def read_ingestion_dashboard(db: Session = Depends(get_db)):
+    return get_ingestion_dashboard_summary(db=db)
+
+@app.get("/api/v1/dashboard/topics", response_model=List[TrackedTopicResponse])
+def read_topics_dashboard(db: Session = Depends(get_db)):
+    return get_topic_dashboard_summary(db=db)
+
+@app.get("/api/v1/dashboard/knowledge-base")
+def read_knowledge_base_dashboard(
+    db: Session = Depends(get_db),
+):
+    return get_knowledge_base_summary(db=db)

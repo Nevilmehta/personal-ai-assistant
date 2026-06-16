@@ -188,3 +188,22 @@ class IngestionRunResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class IngestionDashboardSummary(BaseModel):
+    total_topics: int
+    enabled_topics: int
+
+    total_articles: int
+    articles_with_content: int
+    total_chunks: int
+
+    total_ingestion_runs: int
+    successful_runs: int
+    failed_runs: int
+    running_runs: int
+
+    latest_run: Optional[IngestionRunResponse] = None
+    recent_runs: List[IngestionRunResponse] = []
+
+    class Config:
+        from_attributes = True

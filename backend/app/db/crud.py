@@ -1,4 +1,5 @@
 import hashlib
+from sqlalchemy import func
 from typing import List, Dict, Optional, Any
 from sqlalchemy.orm import Session
 from app.db.models import Article, ArticleChunk, JarvisQuery, JarvisSource, QueryArticle, TrackedTopic, IngestionRun, IngestionTopicRun
@@ -560,3 +561,120 @@ def get_ingestion_run_by_id(
         .filter(IngestionRun.id == run_id)
         .first()
     )
+
+def get_ingestion_dashboard_summary(db: Session):
+    total_topics = db.query(TrackedTopic).count()
+
+    enabled_topics = (
+        db.query(TrackedTopic)
+        .filter(TrackedTopic.enabled == True)
+        .count()
+    )
+
+    total_articles = db.query(Article).count()
+
+    articles_with_content = (
+        db.query(Article)
+        .filter(Article.content_available == True)
+        .count()
+    )
+
+    total_chunks = db.query(ArticleChunk).count()
+    total_ingestion_runs = db.query(IngestionRun).count()
+
+    successful_runs = (
+        db.query(IngestionRun)
+        .filter(IngestionRun.status == "success")
+        .count()
+    )
+
+    failed_runs = (
+        db.query(IngestionRun)
+        .filter(IngestionRun.status == "failed")
+        .count()
+    )
+
+    running_runs = (
+        db.query(IngestionRun)
+        .filter(IngestionRun.status == "running")
+        .count()
+    )
+
+    latest_run = (
+        db.query(IngestionRun)
+        .order_by(IngestionRun.created_at.desc())
+        .first()
+    )
+
+    recent_runs = (
+        db.query(IngestionRun)
+        .order_by(IngestionRun.created_at.desc())
+        .limit(5)
+        .all()
+    )
+
+    return {
+        "total_topics": total_topics,
+        "enabled_topics": enabled_topics,
+        "total_articles": total_articles,
+        "articles_with_content": articles_with_content,
+        "total_chunks": total_chunks,
+        "total_ingestion_runs": total_ingestion_runs,
+        "successful_runs": successful_runs,
+        "failed_runs": failed_runs,
+        "running_runs": running_runs,
+        "latest_run": latest_run,
+        "recent_runs": recent_runs,
+    }
+
+def get_topic_dashboard_summary(db: Session):
+    topic = (
+        db.query(TrackedTopic)
+        .order_by(TrackedTopic.created_at.desc())
+        .all()
+    )
+
+    return topic
+
+def get_knowledge_base_summary(
+    db: Session,
+):
+    total_articles = db.query(Article).count()
+
+    articles_with_content = (
+        db.query(Article)
+        .filter(Article.content_available == True)
+        .count()
+    )
+
+    articles_without_content = total_articles - articles_with_content
+
+    total_chunks = db.query(ArticleChunk).count()
+
+    full_content_chunks = (
+        db.query(ArticleChunk)
+        .filter(ArticleChunk.content_quality == "full_content")
+        .count()
+    )
+
+    snippet_fallback_chunks = (
+        db.query(ArticleChunk)
+        .filter(ArticleChunk.content_quality == "snippet_fallback")
+        .count()
+    )
+
+    title_fallback_chunks = (
+        db.query(ArticleChunk)
+        .filter(ArticleChunk.content_quality == "title_fallback")
+        .count()
+    )
+
+    return {
+        "total_articles": total_articles,
+        "articles_with_content": articles_with_content,
+        "articles_without_content": articles_without_content,
+        "total_chunks": total_chunks,
+        "full_content_chunks": full_content_chunks,
+        "snippet_fallback_chunks": snippet_fallback_chunks,
+        "title_fallback_chunks": title_fallback_chunks,
+    }

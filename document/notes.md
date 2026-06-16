@@ -283,3 +283,27 @@ Worker = employee
 Task function = actual job instructions
 PostgreSQL = permanent article storage
 Qdrant = searchable vector storage
+
+--------------------------------------------------
+After phase 2.7,
+Jarvis now has dashboard-ready APIs:
+
+ingestion overview
+topic overview
+knowledge base overview
+system overview
+
+This is important because later you can build:
+
+Jarvis Control Center
+
+with cards like:
+
+Tracked Topics: 7
+Enabled Topics: 6
+Articles Stored: 120
+Chunks Indexed: 120
+Latest Ingestion: Success
+Failed Runs: 0
+Full Content Articles: 12
+
