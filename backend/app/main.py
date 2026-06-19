@@ -10,9 +10,6 @@ from app.api.routes.topic_routes import router as topic_router
 from app.db.database import Base, engine
 
 
-Base.metadata.create_all(bind=engine)
-
-
 app = FastAPI(
     title="Jarvis AI System",
     description="Personal AI Intelligence System",

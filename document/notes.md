@@ -363,3 +363,15 @@ rag-service → vector-db
 In your future Jarvis architecture, gRPC could be used between internal services.
 
 I used REST for the public FastAPI endpoints because it is easy for clients and dashboards to consume. For the vector database communication with Qdrant, I switched to gRPC because vector search involves sending dense numeric embeddings, and gRPC is more efficient and stable for internal service-to-service communication.
+
+-----------------------------------------------------
+
+Dockerize the full Backend stack,
+Current setup:
+
+FastAPI: local terminal
+PostgreSQL: local install
+Redis: Docker
+Qdrant: Docker
+Celery worker: local terminal
+Celery beat: local terminal
