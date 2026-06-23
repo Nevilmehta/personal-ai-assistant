@@ -1,0 +1,20 @@
+up:
+	docker compose up --build
+
+down:
+	docker compose down
+
+down-v:
+	docker compose down -v
+
+migrate:
+	docker compose exec api alembic upgrade head
+
+logs-api:
+	docker compose logs -f api
+
+logs-worker:
+	docker compose logs -f worker
+
+shell:
+	docker compose exec api bash

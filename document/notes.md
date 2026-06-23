@@ -367,11 +367,20 @@ I used REST for the public FastAPI endpoints because it is easy for clients and 
 -----------------------------------------------------
 
 Dockerize the full Backend stack,
-Current setup:
+Target Docker Architecture:
 
-FastAPI: local terminal
-PostgreSQL: local install
-Redis: Docker
-Qdrant: Docker
-Celery worker: local terminal
-Celery beat: local terminal
+jarvis-api
+   ↓
+PostgreSQL
+Redis
+Qdrant
+
+jarvis-worker
+   ↓
+Redis queue
+PostgreSQL
+Qdrant
+
+jarvis-beat
+   ↓
+Redis queue

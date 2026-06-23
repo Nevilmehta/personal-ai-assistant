@@ -60,7 +60,7 @@ def check_qdrant():
     try:
         client = QdrantClient(
             url=settings.QDRANT_URL,
-            timeout=5,
+            timeout=20,
         )
 
         collections = client.get_collections()
