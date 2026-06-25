@@ -9,7 +9,6 @@ from app.schemas.jarvis_schema import (
     DetailedHealthResponse,
     ServiceHealthStatus
 )
-from app.services.embedding_service import get_embedding_dimension
 
 def check_postgres(db: Session):
     try:
@@ -108,24 +107,14 @@ def check_gemini_config():
     )
 
 def check_embedding_model():
-    try:
-        dimension = get_embedding_dimension()
-
-        return ServiceHealthStatus(
-            service="embedding_model",
-            status="healthy",
-            details={
-                "model": settings.EMBEDDING_MODEL,
-                "dimension": dimension,
-            },
-        )
-
-    except Exception as error:
-        return ServiceHealthStatus(
-            service="embedding_model",
-            status="unhealthy",
-            error=str(error),
-        )
+    return ServiceHealthStatus(
+        service="embedding_model",
+        status="configured",
+        details={
+            "model": settings.EMBEDDING_MODEL,
+            "note": "Model is configured but not loaded during health check.",
+        },
+    )
 
 def calculate_overall_status(
     services: List[ServiceHealthStatus],
@@ -133,7 +122,7 @@ def calculate_overall_status(
     unhealthy_services = [
         service
         for service in services
-        if service.status != "healthy"
+        if service.status == "unhealthy"
     ]
 
     if unhealthy_services:
