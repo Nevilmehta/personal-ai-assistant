@@ -384,3 +384,33 @@ Qdrant
 jarvis-beat
    ↓
 Redis queue
+
+================================================================
+
+Right now, your project has 2 different ways to run:
+
+1. Local dev
+   FastAPI from terminal
+   local PostgreSQL
+   local Redis/Qdrant maybe Docker
+   local voice CLI
+
+2. Docker dev
+   FastAPI container
+   PostgreSQL container
+   Redis container
+   Qdrant container
+   Celery worker container
+   Celery beat container
+
+We will organize:
+
+.env                  local development
+.env.docker           Docker development
+.env.example          safe template
+.env.docker.example   safe Docker template
+
+requirements.txt         backend Docker/server dependencies
+requirements-local.txt   optional full local backup
+requirements-voice.txt   voice CLI dependencies
+============================================================================
